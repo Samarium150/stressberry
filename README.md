@@ -50,6 +50,8 @@ No fans, heat sinks, or case. | Your average acrylic case from eBay. | [FastTech
 
 ### How to
 
+stressberry requires Python 3.11 or newer.
+
 To run stressberry on your computer, simply install it with
 ```bash
 [sudo] apt install stress
