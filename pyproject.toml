@@ -1,3 +1,68 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "stressberry"
+version = "0.3.3"
+description = "Stress tests for the Raspberry Pi"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Nico Schlömer", email = "nico.schloemer@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "matplotlib",
+    "matplotx",
+    "pyyaml",
+]
+
+[project.urls]
+Homepage = "https://github.com/nschloe/stressberry"
+Code = "https://github.com/nschloe/stressberry"
+Issues = "https://github.com/nschloe/stressberry/issues"
+Funding = "https://github.com/sponsors/nschloe"
+
+[project.scripts]
+stressberry-run = "stressberry.cli:run"
+stressberry-plot = "stressberry.cli:plot"
+
+[dependency-groups]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "build" },
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+lint = [
+    "ruff",
+]
+build = [
+    "twine",
+]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+select = ["B", "C", "E", "F", "W"]
+ignore = ["E203", "E266", "E501"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18

@@ -12,18 +12,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
       with:
-        python-version: "3.x"
-    - uses: actions/checkout@v4
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        flake8 .
-    - name: Lint with black
-      run: |
-        pip install black
-        black --check .
+        python-version-file: "pyproject.toml"
+    - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      with:
+        version: "0.11.21"
+        enable-cache: true
+    - name: Sync lint environment
+      run: uv sync --locked --only-group lint
+    - name: Lint with Ruff
+      run: uv run ruff check .
 
   build:
     runs-on: ubuntu-latest
@@ -31,15 +31,27 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/checkout@v4
+    - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      with:
+        version: "0.11.21"
+        enable-cache: true
     - name: Install system dependencies
       run: sudo apt-get install -y stress
-    - name: Test with tox
+    - name: Sync development environment
+      run: uv sync --locked
+    - name: Run tests
+      run: uv run pytest --cov stressberry --cov-report xml --cov-report term
+    - name: Build distributions
+      run: uv build
+    - name: Smoke test wheel entry points
+      env:
+        MPLCONFIGDIR: /tmp/matplotlib
       run: |
-        pip install tox
-        tox
+        uv run --isolated --no-project --with dist/*.whl stressberry-run --help
+        uv run --isolated --no-project --with dist/*.whl stressberry-plot --help
     - uses: codecov/codecov-action@v4
       if: ${{ matrix.python-version == '3.12' }}

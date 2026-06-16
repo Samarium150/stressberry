@@ -88,8 +88,9 @@ photograph of your setup, and perhaps some further information.
 ### Testing
 
 To run the tests, just check out this repository and type
-```
-pytest
+```bash
+uv sync --locked
+uv run pytest
 ```
 
 ### License

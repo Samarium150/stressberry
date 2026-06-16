@@ -1,4 +1,4 @@
-VERSION=$(shell python3 -c "from configparser import ConfigParser; p = ConfigParser(); p.read('setup.cfg'); print(p['metadata']['version'])")
+VERSION=$(shell python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
 
 default:
 	@echo "\"make publish\"?"
@@ -13,11 +13,8 @@ tag:
 
 upload:
 	@if [ "$(shell git rev-parse --abbrev-ref HEAD)" != "main" ]; then exit 1; fi
-	rm -f dist/*
-	# python3 setup.py sdist bdist_wheel
-	# https://stackoverflow.com/a/58756491/353337
-	python3 -m build --sdist --wheel .
-	twine upload dist/*
+	uv build --sdist --wheel --clear
+	uv run --group build twine upload dist/*
 
 publish: tag upload
 
@@ -26,10 +23,10 @@ clean:
 	@rm -rf *.egg-info/ build/ dist/
 
 format:
-	isort .
-	black .
-	blacken-docs README.md
+	uv run ruff format .
 
 lint:
-	black --check .
-	flake8 .
+	uv run ruff check .
+
+test:
+	uv run pytest --cov stressberry --cov-report xml --cov-report term

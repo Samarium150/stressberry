@@ -1,5 +1,5 @@
-import configparser
 from pathlib import Path
+import tomllib
 
 import yaml
 
@@ -7,23 +7,37 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SUPPORTED_PYTHON_VERSIONS = ["3.11", "3.12", "3.13", "3.14"]
 
 
-def test_package_metadata_advertises_supported_python_versions():
-    config = configparser.ConfigParser()
-    config.read(PROJECT_ROOT / "setup.cfg")
+def load_pyproject():
+    return tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
 
-    assert config["options"]["python_requires"] == ">=3.11"
 
-    classifiers = {
-        classifier.strip()
-        for classifier in config["metadata"]["classifiers"].strip().splitlines()
+def test_project_metadata_lives_in_pyproject():
+    pyproject = load_pyproject()
+    project = pyproject["project"]
+
+    assert project["name"] == "stressberry"
+    assert project["version"] == "0.3.3"
+    assert project["requires-python"] == ">=3.11"
+    assert project["readme"] == "README.md"
+    assert project["license"] == "GPL-3.0-or-later"
+    assert project["dependencies"] == ["matplotlib", "matplotx", "pyyaml"]
+    assert project["scripts"] == {
+        "stressberry-run": "stressberry.cli:run",
+        "stressberry-plot": "stressberry.cli:plot",
     }
+
+
+def test_package_metadata_advertises_supported_python_versions():
+    pyproject = load_pyproject()
+    classifiers = set(pyproject["project"]["classifiers"])
+
     assert "Programming Language :: Python :: 3.10" not in classifiers
     for version in ("3.7", "3.8", "3.9"):
         assert f"Programming Language :: Python :: {version}" not in classifiers
     for version in SUPPORTED_PYTHON_VERSIONS:
         assert f"Programming Language :: Python :: {version}" in classifiers
 
-    install_requires = config["options"]["install_requires"].strip().splitlines()
+    install_requires = pyproject["project"]["dependencies"]
     assert not any(
         requirement.startswith("importlib_metadata") for requirement in install_requires
     )
@@ -37,22 +51,34 @@ def test_ci_matrix_matches_advertised_python_versions():
     assert [str(version) for version in matrix] == SUPPORTED_PYTHON_VERSIONS
 
 
-def test_tox_only_requests_declared_package_extras():
-    setup_config = configparser.ConfigParser()
-    setup_config.read(PROJECT_ROOT / "setup.cfg")
+def test_uv_manages_development_tooling():
+    pyproject = load_pyproject()
 
-    tox_config = configparser.ConfigParser()
-    tox_config.read(PROJECT_ROOT / "tox.ini")
+    assert (PROJECT_ROOT / "uv.lock").is_file()
+    assert not (PROJECT_ROOT / "setup.cfg").exists()
 
-    requested_extras = {
-        extra.strip()
-        for extra in tox_config["testenv"].get("extras", "").splitlines()
-        if extra.strip()
-    }
-    declared_extras = (
-        set(setup_config["options.extras_require"])
-        if setup_config.has_section("options.extras_require")
-        else set()
-    )
+    dependency_groups = pyproject["dependency-groups"]
+    assert dependency_groups["test"] == ["pytest", "pytest-cov"]
+    assert dependency_groups["lint"] == ["ruff"]
+    assert dependency_groups["build"] == ["twine"]
+    assert {"include-group": "test"} in dependency_groups["dev"]
+    assert {"include-group": "lint"} in dependency_groups["dev"]
+    assert {"include-group": "build"} in dependency_groups["dev"]
 
-    assert requested_extras <= declared_extras
+    build_system = pyproject["build-system"]
+    assert build_system["build-backend"] == "setuptools.build_meta"
+    assert build_system["requires"] == ["setuptools>=77", "wheel"]
+
+
+def test_ruff_config_lives_in_pyproject():
+    pyproject = load_pyproject()
+
+    assert not (PROJECT_ROOT / ".flake8").exists()
+    assert pyproject["tool"]["ruff"]["line-length"] == 80
+    assert pyproject["tool"]["ruff"]["lint"]["select"] == [
+        "B",
+        "C",
+        "E",
+        "F",
+        "W",
+    ]

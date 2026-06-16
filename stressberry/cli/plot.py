@@ -23,7 +23,7 @@ def plot(argv=None):
         temperature_data = d["temperature"]
         if args.delta_t:
             temperature_data = []
-            zip_object = zip(d["temperature"], d["ambient"])
+            zip_object = zip(d["temperature"], d["ambient"], strict=False)
             for d["temperature"], d["ambient"] in zip_object:
                 temperature_data.append(d["temperature"] - d["ambient"])
 
