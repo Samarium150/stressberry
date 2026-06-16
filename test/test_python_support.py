@@ -35,3 +35,24 @@ def test_ci_matrix_matches_advertised_python_versions():
 
     matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["python-version"]
     assert [str(version) for version in matrix] == SUPPORTED_PYTHON_VERSIONS
+
+
+def test_tox_only_requests_declared_package_extras():
+    setup_config = configparser.ConfigParser()
+    setup_config.read(PROJECT_ROOT / "setup.cfg")
+
+    tox_config = configparser.ConfigParser()
+    tox_config.read(PROJECT_ROOT / "tox.ini")
+
+    requested_extras = {
+        extra.strip()
+        for extra in tox_config["testenv"].get("extras", "").splitlines()
+        if extra.strip()
+    }
+    declared_extras = (
+        set(setup_config["options.extras_require"])
+        if setup_config.has_section("options.extras_require")
+        else set()
+    )
+
+    assert requested_extras <= declared_extras
