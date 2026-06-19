@@ -43,23 +43,26 @@ def plot(argv=None):
 
     # Only plot frequencies when using a single input file
     if len(data) == 1 and args.frequency:
-        ax2 = plt.twinx()
-        ax2.set_ylabel("core frequency (MHz)")
-        if args.freq_lims:
-            ax2.set_ylim(*args.freq_lims)
+        d = data[0]
         try:
-            for d in data:
-                ax2.plot(
-                    d["time"],
-                    d["cpu frequency"],
-                    label=d["name"],
-                    color="C1",
-                    alpha=0.9,
-                )
-            ax1.set_zorder(ax2.get_zorder() + 1)  # put ax1 plot in front of ax2
-            ax1.patch.set_visible(False)  # hide the 'canvas'
-        except KeyError():
+            frequency_data = d["cpu frequency"]
+        except KeyError:
             print("Source data does not contain CPU frequency data.")
+        else:
+            ax2 = plt.twinx()
+            ax2.set_ylabel("core frequency (MHz)")
+            if args.freq_lims:
+                ax2.set_ylim(*args.freq_lims)
+            ax2.plot(
+                d["time"],
+                frequency_data,
+                label=d["name"],
+                color="C1",
+                alpha=0.9,
+            )
+            # Put ax1 plot in front of ax2 and hide the canvas.
+            ax1.set_zorder(ax2.get_zorder() + 1)
+            ax1.patch.set_visible(False)
 
     if args.outfile is not None:
         plt.savefig(

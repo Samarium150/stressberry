@@ -106,6 +106,9 @@ def test_uv_workflows_are_documented_without_make_or_publish_automation():
     assert "pypi" not in workflow.lower()
     assert "publish" not in workflow.lower()
     assert "upload" not in workflow.lower()
+    assert "apt-get install -y stress" not in workflow
+    assert "uv run pytest --cov" not in workflow
+    assert "run: uv run pytest" in workflow
 
     all_group_requirements = [
         requirement
@@ -114,3 +117,15 @@ def test_uv_workflows_are_documented_without_make_or_publish_automation():
         if isinstance(requirement, str)
     ]
     assert "twine" not in all_group_requirements
+
+
+def test_pytest_uv_command_collects_coverage_for_core_modules():
+    pyproject = load_pyproject()
+
+    pytest_options = pyproject["tool"]["pytest"]["ini_options"]
+
+    assert pytest_options["addopts"] == [
+        "--cov=stressberry",
+        "--cov-report=term-missing",
+        "--cov-report=xml",
+    ]

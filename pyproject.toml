@@ -62,3 +62,10 @@ ignore = ["E203", "E266", "E501"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=stressberry",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]

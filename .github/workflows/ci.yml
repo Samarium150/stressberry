@@ -41,12 +41,10 @@ jobs:
       with:
         version: "0.11.21"
         enable-cache: true
-    - name: Install system dependencies
-      run: sudo apt-get install -y stress
     - name: Sync development environment
       run: uv sync --locked
     - name: Run tests
-      run: uv run pytest --cov stressberry --cov-report xml --cov-report term
+      run: uv run pytest
     - name: Build distributions
       run: uv build
     - name: Smoke test wheel entry points
