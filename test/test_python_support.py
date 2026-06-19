@@ -54,6 +54,24 @@ def test_ci_matrix_matches_advertised_python_versions():
     assert [str(version) for version in matrix] == SUPPORTED_PYTHON_VERSIONS
 
 
+def test_ci_uses_current_action_majors():
+    with open(
+        PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+    ) as workflow_file:
+        workflow = yaml.safe_load(workflow_file)
+
+    action_uses = [
+        step["uses"]
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        if "uses" in step
+    ]
+
+    assert "actions/checkout@v7" in action_uses
+    assert "actions/setup-python@v6" in action_uses
+    assert "codecov/codecov-action@v7" in action_uses
+
+
 def test_uv_manages_development_tooling():
     pyproject = load_pyproject()
 

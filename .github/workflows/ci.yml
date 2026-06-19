@@ -12,7 +12,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: actions/setup-python@v6
       with:
         python-version-file: "pyproject.toml"
@@ -33,7 +33,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
@@ -53,5 +53,5 @@ jobs:
       run: |
         uv run --isolated --no-project --with dist/*.whl stressberry-run --help
         uv run --isolated --no-project --with dist/*.whl stressberry-plot --help
-    - uses: codecov/codecov-action@v4
+    - uses: codecov/codecov-action@v7
       if: ${{ matrix.python-version == '3.12' }}
