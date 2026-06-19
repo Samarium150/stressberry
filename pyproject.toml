@@ -44,7 +44,6 @@ stressberry-plot = "stressberry.cli:plot"
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    { include-group = "build" },
 ]
 test = [
     "pytest",
@@ -52,9 +51,6 @@ test = [
 ]
 lint = [
     "ruff",
-]
-build = [
-    "twine",
 ]
 
 [tool.ruff]

@@ -10,7 +10,7 @@
 
 [![gh-actions](https://img.shields.io/github/workflow/status/nschloe/stressberry/ci?style=flat-square)](https://github.com/nschloe/stressberry/actions?query=workflow%3Aci)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/stressberry.svg?style=flat-square)](https://codecov.io/gh/nschloe/stressberry)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-46a?style=flat-square)](https://docs.astral.sh/ruff/)
 
 There are a million ways to cool down your Raspberry Pi: Small heat sinks, specific
 cases, and some [extreme DIY solutions](https://youtu.be/WfQMLInuwws). stressberry is a
@@ -85,12 +85,23 @@ issue](https://github.com/nschloe/stressberry/issues) and include the data file,
 photograph of your setup, and perhaps some further information.
 
 
-### Testing
+### Development
 
-To run the tests, just check out this repository and type
+Create the locked development environment with
 ```bash
 uv sync --locked
+```
+
+Run the checks with
+```bash
+uv run ruff format --check .
+uv run ruff check .
 uv run pytest
+```
+
+Build the source distribution and wheel with
+```bash
+uv build
 ```
 
 ### License

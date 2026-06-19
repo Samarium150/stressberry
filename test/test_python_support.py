@@ -59,14 +59,14 @@ def test_uv_manages_development_tooling():
 
     assert (PROJECT_ROOT / "uv.lock").is_file()
     assert not (PROJECT_ROOT / "setup.cfg").exists()
+    assert not (PROJECT_ROOT / "Makefile").exists()
 
     dependency_groups = pyproject["dependency-groups"]
     assert dependency_groups["test"] == ["pytest", "pytest-cov"]
     assert dependency_groups["lint"] == ["ruff"]
-    assert dependency_groups["build"] == ["twine"]
     assert {"include-group": "test"} in dependency_groups["dev"]
     assert {"include-group": "lint"} in dependency_groups["dev"]
-    assert {"include-group": "build"} in dependency_groups["dev"]
+    assert "build" not in dependency_groups
 
     build_system = pyproject["build-system"]
     assert build_system["build-backend"] == "setuptools.build_meta"
@@ -85,3 +85,32 @@ def test_ruff_config_lives_in_pyproject():
         "F",
         "W",
     ]
+
+
+def test_uv_workflows_are_documented_without_make_or_publish_automation():
+    readme = (PROJECT_ROOT / "README.md").read_text()
+    workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    pyproject = load_pyproject()
+
+    for command in (
+        "uv sync --locked",
+        "uv run ruff format --check .",
+        "uv run ruff check .",
+        "uv run pytest",
+        "uv build",
+    ):
+        assert command in readme
+
+    assert "make " not in readme.lower()
+    assert "twine" not in workflow
+    assert "pypi" not in workflow.lower()
+    assert "publish" not in workflow.lower()
+    assert "upload" not in workflow.lower()
+
+    all_group_requirements = [
+        requirement
+        for requirements in pyproject["dependency-groups"].values()
+        for requirement in requirements
+        if isinstance(requirement, str)
+    ]
+    assert "twine" not in all_group_requirements
