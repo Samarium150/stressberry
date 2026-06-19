@@ -79,7 +79,9 @@ def _get_parser_run():
         default=None,
         help="measure ambient temperature. Sensor Type [11|22|2302] <GPIO Number> e.g. 2302 26",
     )
-    parser.add_argument("outfile", type=argparse.FileType("w"), help="output data file")
+    parser.add_argument(
+        "outfile", type=argparse.FileType("w"), help="output data file"
+    )
     return parser
 
 

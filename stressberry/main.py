@@ -4,7 +4,9 @@ from os import cpu_count
 
 
 def stress_cpu(num_cpus, time):
-    subprocess.check_call(["stress", "--cpu", str(num_cpus), "--timeout", f"{time}s"])
+    subprocess.check_call(
+        ["stress", "--cpu", str(num_cpus), "--timeout", f"{time}s"]
+    )
     return
 
 
@@ -31,7 +33,9 @@ def measure_temp(filename=None):
             temp = float(f.read()) / 1000
     else:
         # Using vcgencmd is specific to the raspberry pi
-        out = subprocess.check_output(["vcgencmd", "measure_temp"]).decode("utf-8")
+        out = subprocess.check_output(["vcgencmd", "measure_temp"]).decode(
+            "utf-8"
+        )
         temp = float(out.replace("temp=", "").replace("'C", ""))
     return temp
 
@@ -44,7 +48,9 @@ def measure_core_frequency(filename=None):
     else:
         # Only vcgencmd measure_clock arm is accurate on Raspberry Pi.
         # Per: https://www.raspberrypi.org/forums/viewtopic.php?f=63&t=219358&start=25
-        out = subprocess.check_output(["vcgencmd", "measure_clock arm"]).decode("utf-8")
+        out = subprocess.check_output(["vcgencmd", "measure_clock arm"]).decode(
+            "utf-8"
+        )
         frequency = float(out.split("=")[1]) / 1000000
     return frequency
 
@@ -83,7 +89,9 @@ def test(stress_duration, idle_duration, cores):
     if cores is None:
         cores = cpu_count()
 
-    print(f"Preparing to stress [{cores}] CPU Cores for [{stress_duration}] seconds")
+    print(
+        f"Preparing to stress [{cores}] CPU Cores for [{stress_duration}] seconds"
+    )
     print(f"Idling for {idle_duration} seconds...")
     tme.sleep(idle_duration)
 

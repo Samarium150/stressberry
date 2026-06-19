@@ -39,12 +39,15 @@ def test_package_metadata_advertises_supported_python_versions():
 
     install_requires = pyproject["project"]["dependencies"]
     assert not any(
-        requirement.startswith("importlib_metadata") for requirement in install_requires
+        requirement.startswith("importlib_metadata")
+        for requirement in install_requires
     )
 
 
 def test_ci_matrix_matches_advertised_python_versions():
-    with open(PROJECT_ROOT / ".github" / "workflows" / "ci.yml") as workflow_file:
+    with open(
+        PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+    ) as workflow_file:
         workflow = yaml.safe_load(workflow_file)
 
     matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["python-version"]
