@@ -16,6 +16,18 @@ from ..main import (
 from .helpers import _get_version_text
 
 
+def _positive_int(value):
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"{value!r} is not an integer"
+        ) from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return parsed
+
+
 def _get_parser_run():
     parser = argparse.ArgumentParser(
         description="Run stress test for the Raspberry Pi."
@@ -40,27 +52,27 @@ def _get_parser_run():
     parser.add_argument(
         "-d",
         "--duration",
-        type=int,
+        type=_positive_int,
         default=300,
         help="stress test duration in seconds (default: 300)",
     )
     parser.add_argument(
         "-i",
         "--idle",
-        type=int,
+        type=_positive_int,
         default=150,
         help="idle time in seconds at start and end of stress test (default: 150)",
     )
     parser.add_argument(
         "--cooldown",
-        type=int,
+        type=_positive_int,
         default=60,
         help="poll interval seconds to check for stable temperature (default: 60)",
     )
     parser.add_argument(
         "-c",
         "--cores",
-        type=int,
+        type=_positive_int,
         default=None,
         help="number of CPU cores to stress (default: all)",
     )
@@ -88,15 +100,27 @@ def _get_parser_run():
 def run(argv=None):
     parser = _get_parser_run()
     args = parser.parse_args(argv)
+    try:
+        _run(args)
+    except RuntimeError as exc:
+        parser.exit(1, f"error: {exc}\n")
 
+
+def _run(args):
     # Cool down first
     print("Awaiting stable baseline temperature...")
     cooldown(interval=args.cooldown, filename=args.temperature_file)
 
+    stress_errors = []
+
+    def run_stress_test():
+        try:
+            test(args.duration, args.idle, args.cores)
+        except RuntimeError as exc:
+            stress_errors.append(exc)
+
     # Start the stress test in another thread
-    t = threading.Thread(
-        target=lambda: test(args.duration, args.idle, args.cores), args=()
-    )
+    t = threading.Thread(target=run_stress_test, args=())
     t.start()
 
     times = []
@@ -143,6 +167,11 @@ def run(argv=None):
         # Choose the sample interval such that we have a respectable number of
         # data points
         t.join(2.0)
+
+    if stress_errors:
+        raise stress_errors[0]
+    if not times:
+        raise RuntimeError("No measurement samples were collected.")
 
     # normalize times
     time0 = times[0]

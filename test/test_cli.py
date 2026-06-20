@@ -49,6 +49,29 @@ def write_run_data(path, *, include_frequency=True):
     return data
 
 
+@pytest.mark.parametrize(
+    ("option", "value"),
+    [
+        ("--duration", "0"),
+        ("--idle", "0"),
+        ("--cooldown", "0"),
+        ("--cores", "0"),
+    ],
+)
+def test_run_parser_rejects_non_positive_numeric_options(
+    option, value, tmp_path, capsys
+):
+    output_file = tmp_path / "out.yml"
+
+    with pytest.raises(SystemExit) as exc_info:
+        run_module._get_parser_run().parse_args(
+            [option, value, str(output_file)]
+        )
+
+    assert exc_info.value.code != 0
+    assert "must be positive" in capsys.readouterr().err
+
+
 def test_run_parser_accepts_sensor_and_timing_options(tmp_path):
     output_file = tmp_path / "out.yml"
 
@@ -84,6 +107,28 @@ def test_run_parser_accepts_sensor_and_timing_options(tmp_path):
     assert args.frequency_file == "freq"
     assert args.ambient == ["22", "26"]
     assert args.outfile.name == str(output_file)
+
+
+def test_run_reports_runtime_errors_without_traceback(
+    monkeypatch, tmp_path, capsys
+):
+    output_file = tmp_path / "stressberry.yml"
+
+    monkeypatch.setattr(
+        run_module,
+        "cooldown",
+        lambda **kwargs: (_ for _ in ()).throw(
+            RuntimeError("vcgencmd is not available")
+        ),
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        run_module.run([str(output_file)])
+
+    captured = capsys.readouterr()
+    assert exc_info.value.code == 1
+    assert "vcgencmd is not available" in captured.err
+    assert "Traceback" not in captured.err
 
 
 def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
