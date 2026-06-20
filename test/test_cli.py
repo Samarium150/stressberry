@@ -131,6 +131,69 @@ def test_run_reports_runtime_errors_without_traceback(
     assert "Traceback" not in captured.err
 
 
+def test_run_preflights_frequency_before_starting_stress(
+    monkeypatch, tmp_path
+):
+    output_file = tmp_path / "stressberry.yml"
+    test_calls = []
+
+    monkeypatch.setattr(run_module, "cooldown", lambda **kwargs: 45.0)
+    monkeypatch.setattr(
+        run_module,
+        "test",
+        lambda duration, idle, cores: test_calls.append(
+            (duration, idle, cores)
+        ),
+    )
+    monkeypatch.setattr(run_module.threading, "Thread", SamplingThread)
+    monkeypatch.setattr(run_module, "measure_temp", lambda filename=None: 50.0)
+    monkeypatch.setattr(
+        run_module,
+        "measure_core_frequency",
+        lambda filename=None: (_ for _ in ()).throw(
+            RuntimeError("Invalid CPU frequency value")
+        ),
+    )
+
+    with pytest.raises(SystemExit):
+        run_module.run(["--frequency-file", "bad", str(output_file)])
+
+    assert test_calls == []
+
+
+def test_run_preflights_ambient_before_starting_stress(
+    monkeypatch, tmp_path
+):
+    output_file = tmp_path / "stressberry.yml"
+    test_calls = []
+
+    monkeypatch.setattr(run_module, "cooldown", lambda **kwargs: 45.0)
+    monkeypatch.setattr(
+        run_module,
+        "test",
+        lambda duration, idle, cores: test_calls.append(
+            (duration, idle, cores)
+        ),
+    )
+    monkeypatch.setattr(run_module.threading, "Thread", SamplingThread)
+    monkeypatch.setattr(run_module, "measure_temp", lambda filename=None: 50.0)
+    monkeypatch.setattr(
+        run_module, "measure_core_frequency", lambda filename=None: 1400.0
+    )
+    monkeypatch.setattr(
+        run_module,
+        "measure_ambient_temperature",
+        lambda sensor_type, pin: (_ for _ in ()).throw(
+            RuntimeError("Invalid ambient temperature sensor")
+        ),
+    )
+
+    with pytest.raises(SystemExit):
+        run_module.run(["--ambient", "99", "23", str(output_file)])
+
+    assert test_calls == []
+
+
 def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
     monkeypatch, tmp_path, capsys
 ):

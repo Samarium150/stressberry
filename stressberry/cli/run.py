@@ -106,10 +106,23 @@ def run(argv=None):
         parser.exit(1, f"error: {exc}\n")
 
 
+def _measure_once(args):
+    ambient_temperature = None
+    temp = measure_temp(args.temperature_file)
+    freq = measure_core_frequency(args.frequency_file)
+    if args.ambient:
+        ambient_temperature = measure_ambient_temperature(
+            sensor_type=args.ambient[0], pin=args.ambient[1]
+        )
+    return temp, freq, ambient_temperature
+
+
 def _run(args):
     # Cool down first
     print("Awaiting stable baseline temperature...")
     cooldown(interval=args.cooldown, filename=args.temperature_file)
+    first_temp, first_freq, first_ambient = _measure_once(args)
+    use_first_measurement = True
 
     stress_errors = []
 
@@ -129,12 +142,16 @@ def _run(args):
     ambient = []
     while t.is_alive():
         times.append(time.time())
-        temps.append(measure_temp(args.temperature_file))
-        freqs.append(measure_core_frequency(args.frequency_file))
+        if use_first_measurement:
+            current_temp = first_temp
+            current_freq = first_freq
+            ambient_temperature = first_ambient
+            use_first_measurement = False
+        else:
+            current_temp, current_freq, ambient_temperature = _measure_once(args)
+        temps.append(current_temp)
+        freqs.append(current_freq)
         if args.ambient:
-            ambient_temperature = measure_ambient_temperature(
-                sensor_type=args.ambient[0], pin=args.ambient[1]
-            )
             if ambient_temperature is None:
                 # Reading the sensor can return None if it times out.
                 # If never had a good result, probably configuration error
