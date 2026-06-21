@@ -203,13 +203,12 @@ def _run(args):
         f"# This file was created by stressberry v{__version__} "
         f"on {created_at}\n"
     )
-    yaml.dump(
-        {
-            "name": args.name,
-            "time": times,
-            "temperature": temps,
-            "cpu frequency": freqs,
-            "ambient": ambient,
-        },
-        args.outfile,
-    )
+    output_data = {
+        "name": args.name,
+        "time": times,
+        "temperature": temps,
+        "cpu frequency": freqs,
+    }
+    if args.ambient:
+        output_data["ambient"] = ambient
+    yaml.dump(output_data, args.outfile)

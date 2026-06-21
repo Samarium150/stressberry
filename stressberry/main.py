@@ -41,7 +41,9 @@ def _read_float_from_file(filename, *, value_name):
     try:
         return float(Path(filename).read_text())
     except OSError as exc:
-        raise RuntimeError(f"Could not read {value_name} file {filename!s}.") from exc
+        raise RuntimeError(
+            f"Could not read {value_name} file {filename!s}."
+        ) from exc
     except ValueError as exc:
         raise RuntimeError(
             f"Invalid {value_name} value in {filename!s}; expected a number."
@@ -73,9 +75,7 @@ def measure_temp(filename=None):
         return _read_float_from_file(filename, value_name="temperature") / 1000
 
     # Using vcgencmd is specific to the raspberry pi
-    out = _run_vcgencmd(
-        ["vcgencmd", "measure_temp"], value_name="temperature"
-    )
+    out = _run_vcgencmd(["vcgencmd", "measure_temp"], value_name="temperature")
     match = re.fullmatch(r"temp=([+-]?\d+(?:\.\d+)?)'C\s*", out)
     if match is None:
         raise RuntimeError(
@@ -88,7 +88,9 @@ def measure_temp(filename=None):
 def measure_core_frequency(filename=None):
     """Returns the CPU frequency in MHz"""
     if filename is not None:
-        return _read_float_from_file(filename, value_name="CPU frequency") / 1000
+        return (
+            _read_float_from_file(filename, value_name="CPU frequency") / 1000
+        )
 
     # Only vcgencmd measure_clock arm is accurate on Raspberry Pi.
     # Per: https://www.raspberrypi.org/forums/viewtopic.php?f=63&t=219358&start=25

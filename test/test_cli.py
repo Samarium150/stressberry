@@ -282,6 +282,44 @@ def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
     assert "using last good value" in capsys.readouterr().out
 
 
+def test_run_without_ambient_omits_ambient_key(monkeypatch, tmp_path):
+    output_file = tmp_path / "stressberry.yml"
+    times = iter([10.0, 12.0, 14.0])
+    temperatures = iter([50.0, 51.0, 52.0])
+    frequencies = iter([1400.0, 1350.0, 1200.0])
+
+    monkeypatch.setattr(run_module, "cooldown", lambda **kwargs: 45.0)
+    monkeypatch.setattr(run_module, "test", lambda duration, idle, cores: None)
+    monkeypatch.setattr(run_module.threading, "Thread", SamplingThread)
+    monkeypatch.setattr(run_module.time, "time", lambda: next(times))
+    monkeypatch.setattr(
+        run_module,
+        "measure_temp",
+        lambda filename=None: next(temperatures),
+    )
+    monkeypatch.setattr(
+        run_module,
+        "measure_core_frequency",
+        lambda filename=None: next(frequencies),
+    )
+
+    run_module.run([str(output_file)])
+
+    yaml_lines = [
+        line
+        for line in output_file.read_text().splitlines()
+        if not line.startswith("#")
+    ]
+    data = yaml.safe_load("\n".join(yaml_lines))
+
+    assert data == {
+        "name": "stressberry data",
+        "time": [0.0, 2.0, 4.0],
+        "temperature": [50.0, 51.0, 52.0],
+        "cpu frequency": [1400.0, 1350.0, 1200.0],
+    }
+
+
 def test_run_uses_zero_when_first_ambient_reading_is_missing(
     monkeypatch, tmp_path, capsys
 ):

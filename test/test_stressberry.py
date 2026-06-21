@@ -161,7 +161,9 @@ def test_measure_ambient_temperature_reports_invalid_sensor(monkeypatch):
 
     monkeypatch.setitem(__builtins__, "__import__", fake_import)
 
-    with pytest.raises(RuntimeError, match="Invalid ambient temperature sensor"):
+    with pytest.raises(
+        RuntimeError, match="Invalid ambient temperature sensor"
+    ):
         main.measure_ambient_temperature(sensor_type="99")
 
 
