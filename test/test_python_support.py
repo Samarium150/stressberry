@@ -131,7 +131,7 @@ def test_uv_workflows_are_documented_without_make_or_publish_automation():
     for snippet in (
         "actions/workflows/ci.yml/badge.svg",
         "Python 3.11 or newer",
-        "sudo apt install stress raspberrypi-utils",
+        "sudo apt install stress raspi-utils",
         "vcgencmd",
         "MPLBACKEND=Agg stressberry-plot",
         "python3 -m pip install Adafruit_DHT",

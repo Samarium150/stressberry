@@ -67,8 +67,10 @@ def test_measure_temp_reports_missing_vcgencmd(monkeypatch):
 
     monkeypatch.setattr(main.subprocess, "check_output", fake_check_output)
 
-    with pytest.raises(RuntimeError, match="vcgencmd is not available"):
+    with pytest.raises(RuntimeError, match="raspi-utils") as exc_info:
         main.measure_temp()
+
+    assert "vcgencmd is not available" in str(exc_info.value)
 
 
 def test_measure_temp_reports_malformed_vcgencmd_output(monkeypatch):

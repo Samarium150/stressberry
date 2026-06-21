@@ -56,7 +56,7 @@ def _run_vcgencmd(command, *, value_name):
     except FileNotFoundError as exc:
         raise RuntimeError(
             "vcgencmd is not available. Run on a Raspberry Pi with "
-            "raspberrypi-utils installed, or pass a file path option."
+            "raspi-utils installed, or pass a file path option."
         ) from exc
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(

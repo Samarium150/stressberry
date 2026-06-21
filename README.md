@@ -54,10 +54,10 @@ stressberry requires Python 3.11 or newer.
 On Raspberry Pi OS, install the system tools first:
 
 ```bash
-sudo apt install stress raspberrypi-utils
+sudo apt install stress raspi-utils
 ```
 
-`stress` runs the CPU load test. `vcgencmd`, provided by `raspberrypi-utils`,
+`stress` runs the CPU load test. `vcgencmd`, provided by `raspi-utils`,
 is used by default for CPU temperature and frequency measurements on Raspberry
 Pi hardware. You can pass `--temperature-file` and `--frequency-file` if you
 want to read those values from files instead.
