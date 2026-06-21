@@ -128,6 +128,21 @@ def test_uv_workflows_are_documented_without_make_or_publish_automation():
     assert "uv run pytest --cov" not in workflow
     assert "run: uv run pytest" in workflow
 
+    for snippet in (
+        "actions/workflows/ci.yml/badge.svg",
+        "Python 3.11 or newer",
+        "sudo apt install stress raspberrypi-utils",
+        "vcgencmd",
+        "MPLBACKEND=Agg stressberry-plot",
+        "python3 -m pip install Adafruit_DHT",
+        "curl -LsSf https://astral.sh/uv/install.sh | sh",
+        "pyproject.toml` under `[tool.ruff]",
+        "Publishing releases to PyPI is out of scope",
+    ):
+        assert snippet in readme
+
+    assert "img.shields.io/github/workflow/status" not in readme
+
     all_group_requirements = [
         requirement
         for requirements in pyproject["dependency-groups"].values()

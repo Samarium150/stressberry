@@ -3,12 +3,11 @@
   <p align="center">Stress tests and temperature plots for the Raspberry Pi</p>
 </p>
 
-[![PyPi Version](https://img.shields.io/pypi/v/stressberry.svg?style=flat-square)](https://pypi.org/project/stressberry)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/stressberry.svg?style=flat-square)](https://pypi.org/pypi/stressberry/)
+[![PyPI version](https://img.shields.io/pypi/v/stressberry.svg?style=flat-square)](https://pypi.org/project/stressberry)
+[![Python versions](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square)](pyproject.toml)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/stressberry.svg?style=flat-square&logo=github&label=Stars&logoColor=white)](https://github.com/nschloe/stressberry)
-[![PyPi downloads](https://img.shields.io/pypi/dm/stressberry.svg?style=flat-square)](https://pypistats.org/packages/stressberry)
 
-[![gh-actions](https://img.shields.io/github/workflow/status/nschloe/stressberry/ci?style=flat-square)](https://github.com/nschloe/stressberry/actions?query=workflow%3Aci)
+[![CI](https://github.com/nschloe/stressberry/actions/workflows/ci.yml/badge.svg)](https://github.com/nschloe/stressberry/actions/workflows/ci.yml)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/stressberry.svg?style=flat-square)](https://codecov.io/gh/nschloe/stressberry)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-46a?style=flat-square)](https://docs.astral.sh/ruff/)
 
@@ -52,22 +51,42 @@ No fans, heat sinks, or case. | Your average acrylic case from eBay. | [FastTech
 
 stressberry requires Python 3.11 or newer.
 
-To run stressberry on your computer, simply install it with
+On Raspberry Pi OS, install the system tools first:
+
 ```bash
-[sudo] apt install stress
+sudo apt install stress raspberrypi-utils
+```
+
+`stress` runs the CPU load test. `vcgencmd`, provided by `raspberrypi-utils`,
+is used by default for CPU temperature and frequency measurements on Raspberry
+Pi hardware. You can pass `--temperature-file` and `--frequency-file` if you
+want to read those values from files instead.
+
+Install the Python package with
+
+```bash
 python3 -m pip install stressberry
 ```
+
 Users of [Arch Linux ARM](https://archlinuxarm.org/) can install from the official repos
 ```
 [sudo] pacman -S stressberry
 ```
+
 and run it with
 ```
 stressberry-run out.dat
 stressberry-plot out.dat -o out.png
 ```
 (Use `MPLBACKEND=Agg stressberry-plot out.dat -o out.png` if you're running the script
-on the Raspberry Pi itself.)
+headlessly on the Raspberry Pi itself.)
+
+Ambient temperature measurement is optional. To use `stressberry-run --ambient`
+with a DHT11, DHT22, or AM2302 sensor, install the optional sensor library:
+
+```bash
+python3 -m pip install Adafruit_DHT
+```
 
 If it your computer can't find the stressberry tools after installation,
 you might have to add the directory `$HOME/.local/bin` to your path:
@@ -102,22 +121,35 @@ photograph of your setup, and perhaps some further information.
 
 ### Development
 
+Install [uv](https://docs.astral.sh/uv/) with the official installer:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
 Create the locked development environment with
 ```bash
 uv sync --locked
 ```
 
-Run the checks with
+Run the same checks as CI with
 ```bash
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest
 ```
 
+Ruff is the linter and formatter for this project. Its configuration lives in
+`pyproject.toml` under `[tool.ruff]` and `[tool.ruff.lint]`.
+
 Build the source distribution and wheel with
 ```bash
 uv build
 ```
+
+Publishing releases to PyPI is out of scope for this modernization milestone.
+CI builds and smoke-tests distributions, but it does not publish release
+artifacts.
 
 ### License
 This software is published under the [GPLv3 license](https://www.gnu.org/licenses/gpl-3.0.en.html).
