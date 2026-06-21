@@ -148,7 +148,9 @@ def _run(args):
             ambient_temperature = first_ambient
             use_first_measurement = False
         else:
-            current_temp, current_freq, ambient_temperature = _measure_once(args)
+            current_temp, current_freq, ambient_temperature = _measure_once(
+                args
+            )
         temps.append(current_temp)
         freqs.append(current_freq)
         if args.ambient:
@@ -194,9 +196,12 @@ def _run(args):
     time0 = times[0]
     times = [tm - time0 for tm in times]
 
+    created_at = datetime.datetime.now(datetime.timezone.utc).isoformat(
+        timespec="seconds"
+    )
     args.outfile.write(
         f"# This file was created by stressberry v{__version__} "
-        f"on {datetime.datetime.now()}\n"
+        f"on {created_at}\n"
     )
     yaml.dump(
         {

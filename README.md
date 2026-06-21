@@ -80,6 +80,21 @@ The run lets the CPU idle for a bit, then stresses it with maximum load for 5 mi
 and lets it cool down afterwards. The entire process takes 10 minutes.  The resulting
 data is displayed to a screen or, if specified, written to a PNG file.
 
+Generated data files are YAML documents with these top-level keys:
+
+- `name`: label used in plots
+- `time`: elapsed seconds from the first sample
+- `temperature`: CPU temperature samples in degrees Celsius
+- `cpu frequency`: CPU frequency samples in MHz
+- `ambient`: ambient temperature samples in degrees Celsius, present when ambient
+  measurement was requested
+
+`time`, `temperature`, `cpu frequency`, and `ambient` contain parallel samples
+when present. Older files without `cpu frequency` or `ambient` still work for
+normal temperature plots. Delta-T plots require `ambient`, and frequency overlays
+require `cpu frequency`. stressberry does not write an explicit schema or version
+field to data files.
+
 If you'd like to submit your own data for display here, feel free to [open an
 issue](https://github.com/nschloe/stressberry/issues) and include the data file, a
 photograph of your setup, and perhaps some further information.

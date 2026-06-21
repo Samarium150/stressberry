@@ -1,3 +1,4 @@
+import datetime
 import os
 from importlib import import_module
 
@@ -36,13 +37,14 @@ class SamplingThread:
         self._remaining_samples -= 1
 
 
-def write_run_data(path, *, include_frequency=True):
+def write_run_data(path, *, include_frequency=True, include_ambient=True):
     data = {
         "name": "dataset",
         "time": [0, 1, 2],
         "temperature": [40.0, 44.0, 46.5],
-        "ambient": [20.0, 21.0, 21.5],
     }
+    if include_ambient:
+        data["ambient"] = [20.0, 21.0, 21.5]
     if include_frequency:
         data["cpu frequency"] = [900.0, 1200.0, 1500.0]
     path.write_text(yaml.safe_dump(data))
@@ -131,9 +133,7 @@ def test_run_reports_runtime_errors_without_traceback(
     assert "Traceback" not in captured.err
 
 
-def test_run_preflights_frequency_before_starting_stress(
-    monkeypatch, tmp_path
-):
+def test_run_preflights_frequency_before_starting_stress(monkeypatch, tmp_path):
     output_file = tmp_path / "stressberry.yml"
     test_calls = []
 
@@ -161,9 +161,7 @@ def test_run_preflights_frequency_before_starting_stress(
     assert test_calls == []
 
 
-def test_run_preflights_ambient_before_starting_stress(
-    monkeypatch, tmp_path
-):
+def test_run_preflights_ambient_before_starting_stress(monkeypatch, tmp_path):
     output_file = tmp_path / "stressberry.yml"
     test_calls = []
 
@@ -198,6 +196,7 @@ def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
     monkeypatch, tmp_path, capsys
 ):
     output_file = tmp_path / "stressberry.yml"
+    fixed_now = datetime.datetime(2026, 6, 21, 12, 30, 45)
     temperatures = iter([50.0, 51.0, 52.0])
     frequencies = iter([1400.0, 1350.0, 1200.0])
     ambient_temperatures = iter([21.0, None, 22.0])
@@ -229,6 +228,19 @@ def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
         "measure_ambient_temperature",
         lambda sensor_type, pin: next(ambient_temperatures),
     )
+    monkeypatch.setattr(
+        run_module.datetime,
+        "datetime",
+        type(
+            "FixedDateTime",
+            (datetime.datetime,),
+            {
+                "now": classmethod(
+                    lambda cls, tz=None: fixed_now.replace(tzinfo=tz)
+                )
+            },
+        ),
+    )
 
     run_module.run(
         [
@@ -253,14 +265,12 @@ def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
         ]
     )
 
-    yaml_lines = [
-        line
-        for line in output_file.read_text().splitlines()
-        if not line.startswith("#")
-    ]
+    output_lines = output_file.read_text().splitlines()
+    yaml_lines = [line for line in output_lines if not line.startswith("#")]
     data = yaml.safe_load("\n".join(yaml_lines))
 
     assert test_calls == [(9, 2, 4)]
+    assert output_lines[0].endswith("on 2026-06-21T12:30:45+00:00")
     assert data == {
         "name": "bench",
         "time": [0.0, 2.0, 4.5],
@@ -268,6 +278,7 @@ def test_run_writes_yaml_with_normalized_times_and_ambient_fallback(
         "cpu frequency": [1400.0, 1350.0, 1200.0],
         "ambient": [21.0, 21.0, 22.0],
     }
+    assert "schema" not in data
     assert "using last good value" in capsys.readouterr().out
 
 
@@ -373,6 +384,76 @@ def test_plot_delta_t_saves_file_without_gui(monkeypatch, tmp_path):
     assert saved[0][1]["transparent"] is True
 
 
+def test_plot_temperature_accepts_old_data_without_frequency_or_ambient(
+    monkeypatch, tmp_path
+):
+    input_file = tmp_path / "input.yml"
+    write_run_data(input_file, include_frequency=False, include_ambient=False)
+    plotted = []
+
+    monkeypatch.setattr(matplotx, "line_labels", lambda: None)
+    monkeypatch.setattr(plt, "show", lambda: None)
+    monkeypatch.setattr(
+        plt,
+        "plot",
+        lambda x, y, label: plotted.append((x, y, label)),
+    )
+
+    plot_module.plot([str(input_file)])
+
+    assert plotted == [([0, 1, 2], [40.0, 44.0, 46.5], "dataset")]
+
+
+def test_plot_delta_t_reports_missing_ambient(monkeypatch, tmp_path, capsys):
+    input_file = tmp_path / "input.yml"
+    write_run_data(input_file, include_ambient=False)
+
+    monkeypatch.setattr(matplotx, "line_labels", lambda: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        plot_module.plot([str(input_file), "--delta-t"])
+
+    assert exc_info.value.code == 1
+    assert "delta-T plotting requires ambient data" in capsys.readouterr().err
+
+
+def test_plot_delta_t_reports_incomplete_ambient(monkeypatch, tmp_path, capsys):
+    input_file = tmp_path / "input.yml"
+    data = write_run_data(input_file)
+    data["ambient"] = [20.0, 21.0]
+    input_file.write_text(yaml.safe_dump(data))
+
+    monkeypatch.setattr(matplotx, "line_labels", lambda: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        plot_module.plot([str(input_file), "--delta-t"])
+
+    assert exc_info.value.code == 1
+    assert (
+        "ambient contains 2 samples but temperature contains 3"
+        in capsys.readouterr().err
+    )
+
+
+def test_plot_delta_t_does_not_mutate_loaded_data(monkeypatch, tmp_path):
+    input_file = tmp_path / "input.yml"
+    loaded_data = write_run_data(input_file)
+
+    monkeypatch.setattr(matplotx, "line_labels", lambda: None)
+    monkeypatch.setattr(plt, "show", lambda: None)
+    monkeypatch.setattr(plt, "plot", lambda x, y, label: None)
+    monkeypatch.setattr(
+        plot_module.yaml,
+        "load",
+        lambda stream, Loader: loaded_data,
+    )
+
+    plot_module.plot([str(input_file), "--delta-t"])
+
+    assert loaded_data["temperature"] == [40.0, 44.0, 46.5]
+    assert loaded_data["ambient"] == [20.0, 21.0, 21.5]
+
+
 def test_plot_show_branch_without_gui(monkeypatch, tmp_path):
     input_file = tmp_path / "input.yml"
     write_run_data(input_file)
@@ -396,6 +477,26 @@ def test_plot_frequency_adds_secondary_axis(monkeypatch, tmp_path):
     plot_module.plot([str(input_file), "--frequency"])
 
     assert len(plt.gcf().axes) == 2
+
+
+def test_plot_frequency_reports_incomplete_frequency(
+    monkeypatch, tmp_path, capsys
+):
+    input_file = tmp_path / "input.yml"
+    data = write_run_data(input_file)
+    data["cpu frequency"] = [900.0, 1200.0]
+    input_file.write_text(yaml.safe_dump(data))
+
+    monkeypatch.setattr(matplotx, "line_labels", lambda: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        plot_module.plot([str(input_file), "--frequency"])
+
+    assert exc_info.value.code == 1
+    assert (
+        "cpu frequency contains 2 samples but time contains 3"
+        in capsys.readouterr().err
+    )
 
 
 def test_plot_warns_when_frequency_data_is_missing(
